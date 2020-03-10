@@ -3,8 +3,8 @@ from django.shortcuts import get_object_or_404
 from django.views import View
 
 from rest_framework.response import Response
-from rest_framework import status, mixins, viewsets, views
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework import status, mixins, generics, viewsets, views, filters
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 
 from .models import Link
 from .serializers import LinkSerializer, LinkListSerializer
@@ -23,14 +23,23 @@ class LinkViewset(mixins.CreateModelMixin,
     }
 
     queryset = Link.objects.all()
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
+    filter_backends = (
+        filters.OrderingFilter,
+    )
+    ordering_fields = ['count',]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer_class()(data=request.data)
         if serializer.is_valid(raise_exception=True):
             full_url = request.data['full_url']
             short_url = settings.HOST_NAME + token_urlsafe(4) + '/'
-            link = Link(full_url=full_url, short_url=short_url)
+            user = self.request.user
+            link = Link(
+                full_url=full_url,
+                short_url=short_url,
+                user = user
+            )
             link.save()
             return Response(
                 data={'short_url': short_url},
@@ -41,7 +50,6 @@ class LinkViewset(mixins.CreateModelMixin,
 
     def destroy(self, request, *args, **kwargs):
         link = Link.objects.get(pk=kwargs['pk'])
-        # link.short_url = None
         link.is_active = False
         link.save()
         return Response(status=status.HTTP_200_OK)
