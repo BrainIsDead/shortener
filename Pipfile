@@ -9,7 +9,7 @@ djangorestframework-simplejwt = "*"
 pylint = "*"
 requests = "*"
 psycopg2 = "*"
-django = "==2.2.11"
+django = "==2.2.13"
 
 [requires]
 python_version = "3.7"
